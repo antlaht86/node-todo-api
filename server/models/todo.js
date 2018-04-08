@@ -5,7 +5,12 @@ var Todo = mongoose.model('Todo', {
         type: String,
         required: true,
         minlength: 1,
-        trim: true
+        trim: true,
+        unique:[true,"jotain paskoo!"]
+    },
+    age: {
+        type: Number,
+
     },
     completed: {
         type: Boolean,
@@ -18,7 +23,7 @@ var Todo = mongoose.model('Todo', {
 });
 
 
-module.exports = {Todo};
+module.exports = { Todo };
 
 
 

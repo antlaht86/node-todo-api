@@ -9,24 +9,45 @@ const { ObjectID } = require('mongodb');
 var { mongoose } = require('./db/mongoose');
 var { Todo } = require('./models/todo');
 var { User } = require('./models/user');
+var { authenticate } = require('./middleware/authenticate');
+var { testing } = require('./middleware/testing');
 
+const { check, validationResult } = require('express-validator/check');
+const { matchedData, sanitize } = require('express-validator/filter');
 
 var app = express();
 const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
-    var todo = new Todo({
-        text: req.body.text
-    });
+app.post('/todos',
+    [
+        check('text').trim().isLength({ min: 5 }).withMessage('must be a five characters long'),
+        check('text').isString().withMessage('must be a String'),
+        check('age').isNumeric().withMessage('must be a Number'),
+    ],
+    (req, res) => {
 
-    todo.save().then((doc) => {
-        res.send(doc);
-    }, (e) => {
-        res.status(400).send(e);
+        const errorFormatter = ({ msg, param, }) => {
+            return `${param}, ${msg}`;
+        };
+
+        const errors = validationResult(req).formatWith(errorFormatter);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.mapped() });
+        }
+
+        var todo = new Todo({
+            text: req.body.text,
+            age: req.body.age
+        });
+
+        todo.save().then((doc) => {
+            res.send(doc);
+        }, (e) => {
+            res.status(400).send(e);
+        });
     });
-});
 
 app.get('/todos', (req, res) => {
 
@@ -39,6 +60,7 @@ app.get('/todos', (req, res) => {
 
 
 app.get('/todos/:id', (req, res) => {
+
     var id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
@@ -99,25 +121,24 @@ app.patch('/todos/:id', (req, res) => {
 });
 
 app.post('/users', (req, res) => {
-
     let body = _.pick(req.body, ['email', 'password']);
     let user = new User(body);
 
-    
+
     user.save().then(() => {
-        console.log("user1-->" + user);
         return user.generateAuthToken();
         // return token;
     }).then((token) => {
-        console.log("token1-->" + token);
-        console.log("user2-->" + user);
         res.header('x-auth', token).send(user);
     }).catch((e) => {
-        console.log("virhe--->",e);
         res.status(400).send(e);
     })
 });
 
+app.get('/users/me', authenticate, (req, res) => {
+
+    res.send(req.user);
+});
 
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
