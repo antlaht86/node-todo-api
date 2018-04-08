@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 
 app.post('/todos',
     [
-        check('text').trim().isLength({ min: 5 }).withMessage('must be a five characters long'),
+        check('text').trim().isLength(5).withMessage('must be a five characters long'),
         check('text').isString().withMessage('must be a String'),
         check('age').isNumeric().withMessage('must be a Number'),
     ],
